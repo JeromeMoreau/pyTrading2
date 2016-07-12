@@ -156,6 +156,16 @@ class DatabaseDataHandler(object):
 
         return np.array([getattr(b, val_type) for b in bars_list])
 
+    def get_latest_bar_datetime(self, symbol):
+        # Returns a Python datetime object for the last bar.
+        try:
+            bars_list = self.latest_data[symbol]
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise
+        else:
+            return bars_list[-1][0]
+
     def update_bars(self):
         # pushes the latest bar to the latest_symbol_data structure for all symbols in the symbol list.
         for s in self.data_generator:

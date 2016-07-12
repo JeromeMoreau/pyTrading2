@@ -1,7 +1,7 @@
 import pandas as pd
 import pymongo
 
-class FakeAccount(object):
+class SimulatedAccount(object):
 
     def __init__(self,equity,leverage,currency):
         self.equity = equity

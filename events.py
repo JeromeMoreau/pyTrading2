@@ -63,7 +63,7 @@ class FillEvent(Event):
 
 class CloseEvent(Event):
     def __init__(self,side,ticket,market,units,close_price,close_date,pnl,interest,accountBalance,strategy):
-        self.type = 'TRADE_CLOSE'
+        self.type = 'TRADE_CLOSED'
         self.side = side
         self.ticket = ticket
         self.market = market
