@@ -48,11 +48,11 @@ class SignalEvent(Event):
         self.expiry = expiry
 
 class FillEvent(Event):
-    def __init__(self,side,ticket,market,units,price,open_date,stop_loss,take_profit,trailing_stop,strategy):
+    def __init__(self,side,ticket,instrument,units,price,open_date,stop_loss,take_profit,trailing_stop,strategy):
         self.type = 'FILL'
         self.side = side
         self.ticket = ticket
-        self.market = market
+        self.instrument = instrument
         self.units = units
         self.price = price
         self.open_date = open_date
@@ -62,11 +62,11 @@ class FillEvent(Event):
         self.strategy = strategy
 
 class CloseEvent(Event):
-    def __init__(self,side,ticket,market,units,close_price,close_date,pnl,interest,accountBalance,strategy):
+    def __init__(self,side,ticket,instrument,units,close_price,close_date,pnl,interest,accountBalance,strategy):
         self.type = 'TRADE_CLOSED'
         self.side = side
         self.ticket = ticket
-        self.market = market
+        self.instrument = instrument
         self.units = units
         self.close_price = close_price
         self.close_date = close_date

@@ -1,6 +1,6 @@
 from events import FillEvent, CloseEvent
 
-class SimulatedExecutionHandler(object):
+class SimulatedExecution(object):
     """
     The simulated execution handler simply converts all order objects into their equivalent fill objects automatically
     without latency or fill-ratio issues.
@@ -42,7 +42,7 @@ class SimulatedExecutionHandler(object):
                     # Fill the Order
                     self.ticket +=1
                     spread = self.spread if event.side == 'buy' else -self.spread
-                    price = self.prices.get_latest_bar_value(event.instrument,"close") + spread/2
+                    price = self.prices.get_latest_bar_value(event.instrument) + spread/2
                     open_date = self.prices.get_latest_bar_datetime(event.instrument)
 
                     fill_event = FillEvent(event.side, self.ticket, event.instrument, event.units,
@@ -57,15 +57,17 @@ class SimulatedExecutionHandler(object):
             pnl = 0.
             interest = 0.0
             spread = self.spread if event.trade.side == 'buy' else -self.spread
-            close_price = self.prices.get_latest_bar_value(event.trade.market,"close") - spread/2
-            event.trade.commission += event.trade.units * spread/2
-            close_time = self.prices.get_latest_bar_datetime(event.trade.market)
-            quote_home_rate = self.prices.get_home_quote(self.prices.symbol_object_dict[event.trade.market].conversion_rate)
+            close_price = self.prices.get_latest_bar_value(event.trade.instrument) - spread/2
+            close_time = self.prices.get_latest_bar_datetime(event.trade.instrument)
+            quote_home_rate = self.prices.get_home_quote(self.prices.symbols_obj[event.trade.instrument].conversion_rate)
             if event.trade.side == 'buy':
-                pnl = (close_price - event.trade.price) * quote_home_rate * event.trade.units
+                pnl = (close_price - event.trade.open_price) * quote_home_rate * event.trade.units
             elif event.trade.side == 'sell':
-                pnl = (event.trade.price - close_price) * quote_home_rate * event.trade.units
+                pnl = (event.trade.open_price - close_price) * quote_home_rate * event.trade.units
 
 
-            close_event = CloseEvent(event.trade.side,event.trade.ticket,event.trade.market,event.trade.units,close_price,close_time,pnl,interest,strategy=event.strategy)
+            close_event = CloseEvent(event.trade.side,event.trade.ticket,event.trade.instrument,event.trade.units,close_price,close_time,pnl,interest,strategy=event.strategy,accountBalance=123)
             self.events.put(close_event)
+
+class OandaExecution(object):
+    def __init__(self,events_queue,prices,):

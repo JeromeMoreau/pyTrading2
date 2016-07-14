@@ -18,21 +18,13 @@ class BacktestEngine(object):
         self.events = events_queue
         self.data_handler = data_handler
         self.execution_handler = execution_handler
-        self.account_handler = account_handler
+        #self.account_handler = account_handler
         self.portfolio = portfolio
-        #self.strategy_dict = self._setup_strategies(strategies)
         self.strategies = strategies
 
         #Whether or not to show the progress bar and the results
         self.show_progression = True
-        self.show_results = True
 
-
-
-    def _setup_strategies(self,strategies):
-        strategy_dict = {}
-        for strategy in strategies:
-            strategy_dict[strategy.identifier] = strategy
 
     def _run_backtest(self):
         """
@@ -61,7 +53,7 @@ class BacktestEngine(object):
                     if event.type =='MARKET':
                         #Notify the strategies
                         for strategy in self.strategies:
-                            strategy.calculate_signal(event)
+                            strategy.calculate_signals(event)
                         #Update the portfolio
                         self.portfolio.on_bar()
                     elif event.type == 'SIGNAL':
@@ -74,11 +66,9 @@ class BacktestEngine(object):
                         self.portfolio.remove_trade(event)
 
     def _output_performance(self):
-        stats = metrics.backtest_performance(self.portfolio)
-        if self.show_results:
-            metrics.plot_performance(self.portfolio)
-            print(stats)
-        return stats
+        self.stats = metrics.Statistics(self.portfolio)
+
+
 
 
     def backtest_trading(self):

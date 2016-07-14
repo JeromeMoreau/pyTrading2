@@ -66,7 +66,7 @@ class DatabaseDataHandler(object):
         order = ['open','high','low','close']
         for instrument in self.symbol_list:
             #Creates a symbol object and get the data
-            margin = self.account.instruments.ix[instrument[:3]+'_'+instrument[3:]].marginRate
+            margin = self.account.instruments.ix[instrument[:3]+'_'+instrument[-3:]].marginRate
             symbol = Symbol(name=instrument,timeframe=self.timeframe, margin=margin, data_vendor=self.data_vendor, home_currency=self.account.currency)
 
             data = db[instrument].find({'$and': [{'datetime': {"$gte": self.start_date}},
@@ -149,6 +149,17 @@ class DatabaseDataHandler(object):
             raise
         else:
             return bars_list[-N:]
+
+    def get_latest_bar_value(self,symbol,val_type='close'):
+        # Returns  of OHLCVI values form the pandas Bar series object.
+        try:
+            bars_list = self.latest_data[symbol]
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise
+        else:
+            return getattr(bars_list[-1], val_type)
+
 
     def get_latest_bars_values(self, symbol, val_type, N=1):
         # Returns the last N bar values from the latest_symbol list, or N-k if less available.
