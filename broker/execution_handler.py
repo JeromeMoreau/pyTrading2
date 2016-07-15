@@ -72,7 +72,7 @@ class SimulatedExecution(object):
             self.events.put(close_event)
 
 class OandaExecution(object):
-    def __init__(self,events_queue,prices,account):
+    def __init__(self,events_queue,account):
         """
 
         :param events_queue:
@@ -82,7 +82,6 @@ class OandaExecution(object):
         """
 
         self.events = events_queue
-        self.prices = prices
         self.account=account
         self.oanda = oandapy.API(account.environment,account.token)
 

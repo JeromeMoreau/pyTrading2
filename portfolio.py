@@ -22,7 +22,7 @@ class Portfolio(object):
         self.equity = account.equity
         self.risk = risk_per_trade
         self.open_trades = open_trades
-        self.symbol_list = self.prices.symbol_list
+        self.symbol_list = self.prices.instruments_list
 
         # Containers for history and closed trades
         self.history=[]

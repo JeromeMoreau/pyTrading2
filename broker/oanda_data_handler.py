@@ -7,6 +7,7 @@ from errors import UnknownGranularity
 import oandapy
 import pandas as pd
 import numpy as np
+from broker.oanda_event_handler import EventHandler
 
 
 def granularity_to_time(s):
@@ -87,7 +88,7 @@ class OandaDataHandler(object):
         self.events = events_queue
         self.instruments_list = instruments_list
         self.granularity = granularity
-        self.event_handler = None
+        self.event_handler = EventHandler(events_queue)
 
         self.stream = Streaming(instruments_list=instruments_list, account=account,data_handler=self,event_handler=self.event_handler)
 
