@@ -1,0 +1,2 @@
+class UnknownGranularity(Exception):
+    pass

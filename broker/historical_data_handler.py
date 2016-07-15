@@ -66,8 +66,9 @@ class DatabaseDataHandler(object):
         order = ['open','high','low','close']
         for instrument in self.symbol_list:
             #Creates a symbol object and get the data
-            margin = self.account.instruments.ix[instrument[:3]+'_'+instrument[-3:]].marginRate
-            symbol = Symbol(name=instrument,timeframe=self.timeframe, margin=margin, data_vendor=self.data_vendor, home_currency=self.account.currency)
+            #margin = self.account.instruments.ix[instrument[:3]+'_'+instrument[-3:]].marginRate
+            #symbol = Symbol(name=instrument,timeframe=self.timeframe, margin=margin, data_vendor=self.data_vendor, home_currency=self.account.currency)
+            symbol = self.account.get_symbol(instrument,self.timeframe)
 
             data = db[instrument].find({'$and': [{'datetime': {"$gte": self.start_date}},
                                                   {'datetime': {"$lte": self.end_date}},

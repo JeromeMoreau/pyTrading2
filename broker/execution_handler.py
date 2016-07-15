@@ -1,4 +1,6 @@
 from events import FillEvent, CloseEvent
+import oandapy
+from datetime import datetime
 
 class SimulatedExecution(object):
     """
@@ -70,4 +72,49 @@ class SimulatedExecution(object):
             self.events.put(close_event)
 
 class OandaExecution(object):
-    def __init__(self,events_queue,prices,):
+    def __init__(self,events_queue,prices,account):
+        """
+
+        :param events_queue:
+        :param prices: price feed
+        :param account: account object to get Token and account_id
+        :return:
+        """
+
+        self.events = events_queue
+        self.prices = prices
+        self.account=account
+        self.oanda = oandapy.API(account.environment,account.token)
+
+    def execute_order(self,order_event):
+        if order_event.type =='ORDER':
+            # Send an order to oanda API and wait for response
+            params={'instrument':order_event.instrument,
+                    'units':int(order_event.units/10), #Divided by 10 for testing purposes
+                    'side':order_event.side,
+                    'type':order_event.order_type,
+                    'stopLoss':round(order_event.stop_loss,4),
+                    'takeProfit':round(order_event.take_profit,4)}
+            try:
+                response = self.oanda.create_order(self.account.id, **params)
+                print(response)
+            except oandapy.OandaError as err:
+                print('Execution: Failed to execute order: %s' %err)
+            else:
+                fill_event = self._create_fill(response,order_event)
+                self.events.put(fill_event)
+
+
+    def _create_fill(self,response,order_event):
+        if response['tradeOpened'] != {}:
+            params={'side':response['tradeOpened']['side'],
+                    'ticket':response['tradeOpened']['id'],
+                    'instrument':response['instrument'],
+                    'units':response['tradeOpened']['units'],
+                    'price':response['price'],
+                    'open_date':datetime.strptime(response['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
+                    'stop_loss':response['tradeOpened']['stopLoss'],
+                    'take_profit':response['tradeOpened']['takeProfit'],
+                    'trailing_stop':response['tradeOpened']['trailingStop'],
+                    'strategy':order_event.strategy}
+            return FillEvent(**params)
