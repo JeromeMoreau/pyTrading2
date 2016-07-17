@@ -29,7 +29,7 @@ class DatabaseDataHandler(object):
         NOTE: conversion rate to home currency use D1 close data
         """
         self.events = events_queue
-        self.symbol_list = symbol_list
+        self.instruments_list = symbol_list
         self.account = account
         self.start_date = start_date
         self.end_date = end_date
@@ -50,8 +50,17 @@ class DatabaseDataHandler(object):
         self.data_length = 0
 
         # Fetch the data from database
+        self.instruments_info = self._get_instruments_info(db_adress)
         self._get_data_from_database(db_adress)
 
+    def _get_instruments_info(self,db_adress):
+        client = pymongo.MongoClient(db_adress)
+        db = client['symbols']
+        instruments = db['oanda_symbols'].find({})
+        instruments = pd.DataFrame(list(instruments)).set_index('instrument')
+        instruments.drop('_id',axis=1,inplace=True)
+
+        return instruments
 
     def _get_data_from_database(self,db_adress):
 
@@ -61,14 +70,13 @@ class DatabaseDataHandler(object):
             db_name = 'Forex_Master_' + self.timeframe
             db =client[db_name]
             need_resampling = False
-        #TODO Support for other timeframes + resampling
+        #TODO Support for other timeframes + resampling + data_transformation
 
         order = ['open','high','low','close']
-        for instrument in self.symbol_list:
+        for instrument in self.instruments_list:
             #Creates a symbol object and get the data
-            #margin = self.account.instruments.ix[instrument[:3]+'_'+instrument[-3:]].marginRate
-            #symbol = Symbol(name=instrument,timeframe=self.timeframe, margin=margin, data_vendor=self.data_vendor, home_currency=self.account.currency)
-            symbol = self.account.get_symbol(instrument,self.timeframe)
+            info = self.instruments_info.ix[instrument[:3]+'_'+instrument[-3:]]
+            symbol = Symbol(instrument,self.timeframe,self.account.currency,margin=info.marginRate,one_pip=info.pip)
 
             data = db[instrument].find({'$and': [{'datetime': {"$gte": self.start_date}},
                                                   {'datetime': {"$lte": self.end_date}},
@@ -193,7 +201,7 @@ class DatabaseDataHandler(object):
 
     def get_home_quote(self, currency):
         # Returns the conversion factor
-        quote = self.get_latest_bars_values(currency,'close')[0]
+        quote = self.get_latest_bar_value(currency)
         return quote
 
 

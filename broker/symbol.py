@@ -12,6 +12,7 @@ class Symbol(object):
         self.data_vendor = data_vendor
 
         self.conversion_rate =self._setup_conversion_rate(home_currency)
+        self.db_symbol_name = None
 
     def _setup_conversion_rate(self,home_currency):
 

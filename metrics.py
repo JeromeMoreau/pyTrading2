@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
+
 
 class Statistics(object):
     def __init__(self,portfolio):
@@ -21,6 +23,7 @@ class Statistics(object):
         drawdown,self.max_dd,self.dd_duration = create_drawdowns(self.history.open_equity)
         self.history['drawdown'] = drawdown
         self.sharpe = create_sharpe_ratio(self.history.returns)
+        self.r_squared = rsquared(np.arange(len(self.history.equity)),self.history.equity)
         
         
         
@@ -182,3 +185,8 @@ def create_sharpe_ratio(returns, periods=252):
     periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
     """
     return np.sqrt(periods)*(np.mean(returns)) / np.std(returns)
+
+def rsquared(x, y):
+    """ Return R^2 where x and y are array-like."""
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    return r_value**2

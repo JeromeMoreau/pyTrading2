@@ -95,7 +95,16 @@ class OandaDataHandler(object):
         # Containers for price data
         self.data = {}
         self.symbols_obj={}
+        self.instruments_info = self._get_instruments_info()
         self.candles = self._setup_pairs()
+
+
+    def _get_instruments_info(self):
+        oanda = oandapy.API(self.account.environment,self.account.token)
+        data = oanda.get_instruments(self.account.id,fields="marginRate,pip,displayName,maxTradeUnits,halted").get('instruments')
+        instruments=pd.DataFrame(list(data))
+        return instruments
+
 
     def _setup_pairs(self):
         candles={}
@@ -106,9 +115,10 @@ class OandaDataHandler(object):
             candles[instrument] = CandleGenerator(instrument,self.granularity)
 
             # Create a symbol object and add conversion rate to stream
-            #symbol = Symbol(instrument,self.granularity,self.account.currency,margin=0,data_vendor='oanda')
-            symbol=self.account.get_symbol(instrument,self.granularity)
-            #self.symbols_obj[instrument]=symbol
+            info = self.instruments_info.ix[instrument]
+            symbol = Symbol(instrument,self.granularity,self.account.currency,margin=info.marginRate,one_pip=info.pip)
+            self.symbols_obj[instrument]=symbol
+
             if symbol.conversion_rate[:3] != symbol.conversion_rate[-3:]:
                 self.stream.add_instrument(symbol.conversion_rate)
                 candles[symbol.conversion_rate] = CandleGenerator(symbol.conversion_rate,self.granularity)
@@ -121,7 +131,6 @@ class OandaDataHandler(object):
             df = pd.DataFrame(list(history))[order]
             df.time = pd.to_datetime(df.time)
             df.columns=['datetime','open','high','low','close','volume','complete']
-            #df.set_index('datetime',inplace=True)
             self.data[instrument] = df
 
 
@@ -173,3 +182,10 @@ class OandaDataHandler(object):
     def get_latest_bars_values(self,symbol,val_type,N=1):
         bars_list = self.data[symbol][val_type]
         return np.array(bars_list.values[-N:])
+
+    def get_home_quote(self,currency):
+        if currency[:3] == currency[-3:]:
+            return 1
+        else:
+            quote = self.get_latest_bar_value(currency)
+            return quote
