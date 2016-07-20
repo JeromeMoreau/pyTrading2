@@ -96,7 +96,7 @@ class DatabaseDataHandler(object):
             self.latest_data[instrument]=[]
 
         self.data_length=len(self.comb_index)
-        print('Data_handler: Fetched %s candles for each symbols' %self.data_length)
+        #print('Data_handler: Fetched %s candles for each symbols' %self.data_length)
 
 
         #Get conversion rate data

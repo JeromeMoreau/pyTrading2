@@ -14,7 +14,7 @@ class EventHandler(object):
             self.events.put(close_event)
         elif data['type'] == 'MARKET_ORDER_CREATE':
             #Should create an order object
-            order_event = OrderEvent()
+            #order_event = OrderEvent()
             print('Data: Received MARKET_ORDER_CREATE Event,not yet supported')
 
         elif data['type'] == 'MARKET_IF_TOUCHED_ORDER_CREATE':

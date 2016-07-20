@@ -1,6 +1,8 @@
 import pandas as pd
 import pymongo
-from broker.symbol import Symbol
+import oandapy
+from datetime import datetime
+from trade import Trade
 
 class SimulatedAccount(object):
 
@@ -8,7 +10,8 @@ class SimulatedAccount(object):
         self.equity = equity
         self.leverage = leverage
         self.currency = currency
-        #self.instruments = self._instruments_info()
+        self.open_trades = False
+        self.open_orders = False
 
     def _instruments_info(self):
         client = pymongo.MongoClient()
@@ -27,3 +30,41 @@ class OandaAccount(object):
         self.id = account_id
         self.currency = 'USD'
         self.equity = 1000.
+        self.oanda = oandapy.API(self.environment,self.token)
+        self._get_account_infos()
+
+
+    def _get_account_infos(self):
+        infos = self.oanda.get_account(self.id)
+        self.equity = infos['balance']
+        self.currency = infos['accountCurrency']
+        self.open_trades = True if infos['openTrades'] > 0 else False
+        self.open_orders =  True if infos['openOrders'] > 0 else False
+        self.margin_rate = infos['marginRate']
+
+    def trades_info(self):
+        # Creates a list of every Trade
+        trades=[]
+        tr_list = self.oanda.get_trades(self.id)
+        tr_list = tr_list.get('trades')
+        for tr in tr_list:
+            specs={'ticket':tr['ticket'],
+                   'side':tr['side'],
+                   'instrument':tr['instrument'],
+                   'units':tr['units'],
+                   'open_price':tr['price'],
+                   'open_date':datetime.strptime(tr['time'], '%Y-%m-%dT%H:%M:%S.%fZ'),
+                   'strategy':'unknown',
+                   'stop_loss':tr['stopLoss'],
+                   'take_profit':tr['takeProfit'],
+                   'trailing_stop':tr['trailingStop'],
+                   }
+            trades.append(Trade(**specs))
+
+        return trades
+
+    def orders_info(self):
+        or_list = self.oanda.get_orders(self.id)
+        or_list = or_list.get('orders')
+        return or_list
+

@@ -3,7 +3,7 @@ from broker.symbol import Symbol
 from events import MarketEvent
 from datetime import datetime
 import re
-from errors import UnknownGranularity
+from errors import UnknownGranularity, UnknowSymbolName
 import oandapy
 import pandas as pd
 import numpy as np
@@ -102,11 +102,13 @@ class OandaDataHandler(object):
     def _get_instruments_info(self):
         oanda = oandapy.API(self.account.environment,self.account.token)
         data = oanda.get_instruments(self.account.id,fields="marginRate,pip,displayName,maxTradeUnits,halted").get('instruments')
-        instruments=pd.DataFrame(list(data))
+        instruments=pd.DataFrame(list(data)).set_index('instrument')
+
         return instruments
 
 
     def _setup_pairs(self):
+
         candles={}
         oanda = oandapy.API(self.account.environment,self.account.token)
         for instrument in self.instruments_list:

@@ -3,7 +3,7 @@ from trade import Trade
 import numpy as np
 
 class Portfolio(object):
-    def __init__(self,events_queue,prices,account,strategies,risk_per_trade,open_trades=[]):
+    def __init__(self,events_queue,prices,account,strategies,risk_per_trade,data_store=None):
         """
         Portfolio object to execute signals and create orders, responsible for position sizing.
 
@@ -20,11 +20,15 @@ class Portfolio(object):
         self.account =account
         self.strategies,self.weigths = self._setup_strategies(strategies)
         self.equity = account.equity
+        self.starting_equity = account.equity
         self.risk = risk_per_trade
-        self.open_trades = open_trades
         self.symbol_list = self.prices.instruments_list
+        self.compound = True
 
-        # Containers for history and closed trades
+        # Containers for history and  trades
+        self.open_trades = []
+        self.open_orders = []
+        self._check_account_trades()
         self.history=[]
         self.closed_trades=[]
 
@@ -37,6 +41,20 @@ class Portfolio(object):
             weight[strat.identifier]= 1/len(strategies)
 
         return strategy,weight
+
+    def _check_account_trades(self):
+        if self.account.open_trades == True:
+            # Create a Trade for each opened trades
+            trade_list = self.account.trades_info()
+            for trade in trade_list:
+                #TODO: Match every trade with a strategy
+                self.open_trades.append(trade)
+        if self.account.open_orders == True:
+            # Create an Order object for each opened object
+            order_list = self.account.orders_info()
+            for order in order_list:
+                self.open_orders.append(order)
+
 
     def add_new_trade(self,event):
         # Converts a FillEvent to Trade object and put it in trades list
@@ -101,6 +119,9 @@ class Portfolio(object):
                     break
 
     def _calculate_position_size(self,open_price,stop_loss,conversion_factor):
-        position_size = (self.equity * self.risk) / (abs(stop_loss-open_price)*conversion_factor)
-
-        return position_size if position_size > 0 else 0
+        if self.compound == True:
+            position_size = (self.equity * self.risk) / (abs(stop_loss-open_price)*conversion_factor)
+            return position_size if position_size > 0 else 0
+        else:
+            position_size = (self.starting_equity * self.risk) / (abs(stop_loss-open_price)*conversion_factor)
+            return position_size if position_size > 0 else 0
