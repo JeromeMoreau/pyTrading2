@@ -1,5 +1,6 @@
 
 from events import CloseEvent,OrderEvent
+from datetime import datetime
 
 class EventHandler(object):
     def __init__(self,events_queue):
@@ -8,14 +9,21 @@ class EventHandler(object):
     def process_event(self,data):
         if data['type'] == 'TRADE_CLOSE' or data['type'] == 'STOP_LOSS_FILLED' or data['type'] == 'TAKE_PROFIT_FILLED':
             # Generate CloseEvent
-            print('Generating CloseEvent')
+            print('Generating CloseEvent: %s' %data['type'])
             close_event = CloseEvent(data['side'],data['tradeId'],data['instrument'],
-                                     data['units'],data['price'],data['time'],data['pl'],data['interest'],data['accountBalance'],strategy='unknown')
+                                     data['units'],data['price'],datetime.strptime(data['time'], '%Y-%m-%dT%H:%M:%S.%fZ'),
+                                     data['pl'],data['interest'],data['accountBalance'],strategy='unknown')
             self.events.put(close_event)
         elif data['type'] == 'MARKET_ORDER_CREATE':
             #Should create an order object
-            #order_event = OrderEvent()
-            print('Data: Received MARKET_ORDER_CREATE Event,not yet supported')
+            params={'side':data['side'],
+                    'ticket':data['tradeOpened']['id'],
+                    'instrument':data['instrument'],
+                    'units':data['tradeOpened']['units'],
+                    'price':data['price'],
+                    'open_date':datetime.strptime(data['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
+                    }
+
 
         elif data['type'] == 'MARKET_IF_TOUCHED_ORDER_CREATE':
             #Should create a limit order object

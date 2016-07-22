@@ -102,7 +102,10 @@ class OandaDataHandler(object):
     def _get_instruments_info(self):
         oanda = oandapy.API(self.account.environment,self.account.token)
         data = oanda.get_instruments(self.account.id,fields="marginRate,pip,displayName,maxTradeUnits,halted").get('instruments')
-        instruments=pd.DataFrame(list(data)).set_index('instrument')
+        instruments=pd.DataFrame(list(data))
+        instruments['currency']=instruments.instrument.str[-3:]
+        instruments['base']=instruments.instrument.str[:-4]
+        instruments.set_index('instrument',inplace=True)
 
         return instruments
 
@@ -118,25 +121,41 @@ class OandaDataHandler(object):
 
             # Create a symbol object and add conversion rate to stream
             info = self.instruments_info.ix[instrument]
-            symbol = Symbol(instrument,self.granularity,self.account.currency,margin=info.marginRate,one_pip=info.pip)
+            conversion_rate = info.currency +'_'+self.account.currency
+            inverse_rate=conversion_rate[-3:]+'_'+conversion_rate[:3]
+            symbol = Symbol(instrument,self.granularity,conversion_rate,inverse_rate,margin=info.marginRate,one_pip=info.pip)
             self.symbols_obj[instrument]=symbol
 
             if symbol.conversion_rate[:3] != symbol.conversion_rate[-3:]:
-                self.stream.add_instrument(symbol.conversion_rate)
-                candles[symbol.conversion_rate] = CandleGenerator(symbol.conversion_rate,self.granularity)
+                conversion_rate = symbol.conversion_rate
+                inverse_rate = symbol.inverse_rate
+                if conversion_rate in self.instruments_info.index:
+                    self.stream.add_instrument(symbol.conversion_rate[:3]+'_'+symbol.conversion_rate[-3:])
+                    candles[symbol.conversion_rate] = CandleGenerator(symbol.conversion_rate,self.granularity)
+                elif inverse_rate in self.instruments_info.index:
+                    print('Portfolio: Using inverse symbol for conversion')
+                    symbol.use_inverse_rate = True
+                    self.stream.add_instrument(inverse_rate)
+                    candles[symbol.conversion_rate] = CandleGenerator(symbol.conversion_rate,self.granularity)
+                else:
+                    print('Portfolio: Conversion instrument %s not found for symbol %s' %(symbol.conversion_rate,symbol.name))
+
 
             # Populate container self.data with some initial data
-            history = oanda.get_history(instrument=instrument,granularity=self.granularity,candleFormat='midpoint',
-                                        count=100,alignementTimezone="Europe/london")
-            history = history.get('candles')
-            order=['time','openMid','highMid','lowMid','closeMid','volume','complete']
-            df = pd.DataFrame(list(history))[order]
-            df.time = pd.to_datetime(df.time)
-            df.columns=['datetime','open','high','low','close','volume','complete']
-            self.data[instrument] = df
-
+            self.data[instrument] = self._get_oanda_history(instrument,self.granularity)
 
         return candles
+
+    def _get_oanda_history(self,instrument,granularity,count=100):
+        oanda = oandapy.API(self.account.environment,self.account.token)
+        history = oanda.get_history(instrument=instrument,granularity=self.granularity,candleFormat='midpoint',
+                                    count=100,alignementTimezone="Europe/london")
+        history = history.get('candles')
+        order=['time','openMid','highMid','lowMid','closeMid','volume','complete']
+        df = pd.DataFrame(list(history))[order]
+        df.time = pd.to_datetime(df.time)
+        df.columns=['datetime','open','high','low','close','volume','complete']
+        return df
 
     def process_tick(self,tick):
         #Add the tick to the corresponding candle
@@ -170,7 +189,7 @@ class OandaDataHandler(object):
 
                 self.data[candle['instrument']]=self.data[candle['instrument']].append(cdl,ignore_index=True)
 
-            print(self.data[candle['instrument']].tail(1))
+            #print(self.data[candle['instrument']].tail(1))
             self.events.put(MarketEvent())
 
 
@@ -182,6 +201,9 @@ class OandaDataHandler(object):
         return self.get_latest_bar_value(symbol,'datetime')
 
     def get_latest_bars_values(self,symbol,val_type,N=1):
+        if N > len(self.data[symbol]):
+            print('DATA HANDLER: Adding data due to insuffisant quantity')
+            self.data[symbol]=self._get_oanda_history(symbol,self.granularity,count=(N+1))
         bars_list = self.data[symbol][val_type]
         return np.array(bars_list.values[-N:])
 

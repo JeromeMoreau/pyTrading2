@@ -57,7 +57,10 @@ class DatabaseDataHandler(object):
         client = pymongo.MongoClient(db_adress)
         db = client['symbols']
         instruments = db['oanda_symbols'].find({})
-        instruments = pd.DataFrame(list(instruments)).set_index('instrument')
+        instruments = pd.DataFrame(list(instruments))
+        instruments['currency']=instruments.instrument.str[-3:]
+        instruments['base']=instruments.instrument.str[:-3]
+        instruments.set_index('instrument',inplace=True)
         instruments.drop('_id',axis=1,inplace=True)
 
         return instruments
@@ -76,7 +79,9 @@ class DatabaseDataHandler(object):
         for instrument in self.instruments_list:
             #Creates a symbol object and get the data
             info = self.instruments_info.ix[instrument[:3]+'_'+instrument[-3:]]
-            symbol = Symbol(instrument,self.timeframe,self.account.currency,margin=info.marginRate,one_pip=info.pip)
+            conversion_rate = info.currency +self.account.currency
+            inverse_rate=conversion_rate[-3:]+conversion_rate[:3]
+            symbol = Symbol(instrument,self.timeframe,conversion_rate,inverse_rate,margin=info.marginRate,one_pip=info.pip)
 
             data = db[instrument].find({'$and': [{'datetime': {"$gte": self.start_date}},
                                                   {'datetime': {"$lte": self.end_date}},

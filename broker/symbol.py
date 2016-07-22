@@ -1,7 +1,6 @@
-import pymongo
 
 class Symbol(object):
-    def __init__(self,name,timeframe,home_currency,margin,data_vendor=None,one_pip = 0.0001):
+    def __init__(self,name,timeframe,conversion_rate,inverse_rate,margin,data_vendor=None,one_pip = 0.0001):
         self.name = name
         self.pip = one_pip
         self.maxTradeUnits = None
@@ -11,10 +10,8 @@ class Symbol(object):
         self.timeframe = timeframe
         self.data_vendor = data_vendor
 
-        self.conversion_rate =self._setup_conversion_rate(home_currency)
-        self.db_symbol_name = None
+        self.conversion_rate = conversion_rate
+        self.use_inverse_rate=False
+        self.inverse_rate = inverse_rate
+        print(self.conversion_rate,self.inverse_rate)
 
-    def _setup_conversion_rate(self,home_currency):
-
-        conversion_rate = self.name[-3:] + home_currency
-        return conversion_rate

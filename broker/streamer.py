@@ -21,7 +21,8 @@ class Streaming(oandapy.Streamer):
 
     def add_instrument(self,instrument):
         # Used by data_handler to add an instrument to instrument_list
-        self.instruments_list.append(instrument)
+        if instrument not in self.instruments_list:
+            self.instruments_list.append(instrument)
 
     def stream_prices(self):
         self.rates(account_id=self.account.id,instruments=str(','.join(self.instruments_list)))
@@ -41,7 +42,7 @@ class Streaming(oandapy.Streamer):
             self.data_handler.process_tick(tick_event)
 
         elif 'transaction' in data:
-            print('received event')
+            print('STREAMER: Event:',data)
             self.event_handler.process_event(data.get('transaction'))
 
     def on_error(self, data):

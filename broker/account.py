@@ -48,7 +48,7 @@ class OandaAccount(object):
         tr_list = self.oanda.get_trades(self.id)
         tr_list = tr_list.get('trades')
         for tr in tr_list:
-            specs={'ticket':tr['ticket'],
+            specs={'ticket':tr['id'],
                    'side':tr['side'],
                    'instrument':tr['instrument'],
                    'units':tr['units'],

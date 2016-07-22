@@ -103,17 +103,50 @@ class OandaExecution(object):
                 fill_event = self._create_fill(response,order_event)
                 self.events.put(fill_event)
 
+        elif order_event.type=='EXIT_ORDER':
+            print('EXECUTION: Received Exit_order')
+            try:
+                response = self.oanda.close_trade(self.account.id,order_event.ticket)
+            except oandapy.OandaError as err:
+                print('Execution: Failed to execute order: %s' %err)
+            else:
+                #close_event =self._create_fill(response,order_event)
+                #self.events.put(close_event)
+                print('EXECUTION:',response)
+
 
     def _create_fill(self,response,order_event):
-        if response['tradeOpened'] != {}:
-            params={'side':response['tradeOpened']['side'],
-                    'ticket':response['tradeOpened']['id'],
-                    'instrument':response['instrument'],
-                    'units':response['tradeOpened']['units'],
-                    'price':response['price'],
-                    'open_date':datetime.strptime(response['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
-                    'stop_loss':response['tradeOpened']['stopLoss'],
-                    'take_profit':response['tradeOpened']['takeProfit'],
-                    'trailing_stop':response['tradeOpened']['trailingStop'],
-                    'strategy':order_event.strategy}
-            return FillEvent(**params)
+        try:
+            if response['tradeOpened'] != {}:
+                params={'side':response['tradeOpened']['side'],
+                        'ticket':response['tradeOpened']['id'],
+                        'instrument':response['instrument'],
+                        'units':response['tradeOpened']['units'],
+                        'price':response['price'],
+                        'open_date':datetime.strptime(response['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
+                        'stop_loss':response['tradeOpened']['stopLoss'],
+                        'take_profit':response['tradeOpened']['takeProfit'],
+                        'trailing_stop':response['tradeOpened']['trailingStop'],
+                        'strategy':order_event.strategy}
+                return FillEvent(**params)
+
+            elif response['tradeReduced'] != {}:
+                print('Execution: Something trying to reduce trade')
+                print(response)
+
+            elif response['tradesClosed']!= {}:
+                params={'side':response['tradesClosed']['side'],
+                        'ticket':response['tradesClosed']['id'],
+                        'instrument':response['instrument'],
+                        'units':response['tradesClosed']['units'],
+                        'close_price':response['price'],
+                        'close_date':datetime.strptime(response['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
+                        'strategy':order_event.strategy,
+                        'pnl':response['profit'],
+                        'interest':0,
+                        'accountBalance':0}
+                return CloseEvent(**params)
+
+        except KeyError:
+            print('Execution: response',response)
+            print('Execution: order_event',order_event.__dict__)

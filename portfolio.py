@@ -22,6 +22,7 @@ class Portfolio(object):
         self.equity = account.equity
         self.starting_equity = account.equity
         self.risk = risk_per_trade
+        self.data_store = data_store
         self.symbol_list = self.prices.instruments_list
         self.compound = True
 
@@ -47,7 +48,11 @@ class Portfolio(object):
             # Create a Trade for each opened trades
             trade_list = self.account.trades_info()
             for trade in trade_list:
-                #TODO: Match every trade with a strategy
+                if trade.strategy == 'unknown':
+                    strategy = self.data_store.find_trade(trade.ticket)['strategy']
+                    trade.strategy=strategy
+                    self.strategies[trade.strategy].invested[trade.instrument]='LONG' if trade.side=='buy' else 'SHORT'
+                    self.strategies[trade.strategy].stop_loss[trade.instrument]=trade.stop_loss
                 self.open_trades.append(trade)
         if self.account.open_orders == True:
             # Create an Order object for each opened object
@@ -66,11 +71,20 @@ class Portfolio(object):
         #Notify the strategy
         self.strategies[event.strategy].invested[event.instrument]='LONG' if event.side=='buy' else 'SHORT'
 
+        #Record to trade_store
+        if self.data_store:
+            self.data_store.add_open_trade(trade)
+
     def remove_trade(self,close_event):
         # Get the Trade object, updates it and place it in closed_trades
         for trade in self.open_trades:
             if trade.ticket == close_event.ticket:
-                conversion_factor = self.prices.get_home_quote(self.prices.symbols_obj[trade.instrument].conversion_rate)
+                if self.prices.symbols_obj[trade.instrument].use_inverse_rate == True:
+                    conversion_rate = self.prices.symbols_obj[trade.instrument].inverse_rate
+                    conversion_factor = 1 / self.prices.get_home_quote(conversion_rate)
+                else:
+                    conversion_rate = self.prices.symbols_obj[trade.instrument].conversion_rate
+                    conversion_factor = self.prices.get_home_quote(conversion_rate)
                 trade.update_trade(cur_price=close_event.close_price,conversion_factor=conversion_factor)
                 trade.close_price = close_event.close_price
                 trade.close_date = close_event.close_date
@@ -80,7 +94,11 @@ class Portfolio(object):
                 self.open_trades.remove(trade)
 
                 # Notify the strategy
-                self.strategies[close_event.strategy].invested[close_event.instrument]='OUT'
+                self.strategies[trade.strategy].invested[close_event.instrument]='OUT'
+
+                        #Record to trade_store
+                if self.data_store:
+                    self.data_store.add_close_trade(trade)
 
     def on_bar(self):
         # Updates every Trade in open_trade and record metrics
@@ -88,7 +106,12 @@ class Portfolio(object):
         exposure = dict(zip(self.symbol_list,np.zeros(len(self.symbol_list))))
         for trade in self.open_trades:
             price = self.prices.get_latest_bar_value(trade.instrument)
-            conversion_factor = self.prices.get_home_quote(self.prices.symbols_obj[trade.instrument].conversion_rate)
+            if self.prices.symbols_obj[trade.instrument].use_inverse_rate == True:
+                conversion_rate = self.prices.symbols_obj[trade.instrument].inverse_rate
+                conversion_factor = 1 / self.prices.get_home_quote(conversion_rate)
+            else:
+                conversion_rate = self.prices.symbols_obj[trade.instrument].conversion_rate
+                conversion_factor = self.prices.get_home_quote(conversion_rate)
             trade.update_trade(price,conversion_factor)
 
             #records for history
@@ -101,7 +124,12 @@ class Portfolio(object):
         if signal_event.side == 'buy' or signal_event.side == 'sell':
             # Convert the SignalEvent into OrderEvent
             open_price=self.prices.get_latest_bars_values(signal_event.instrument,"close")
-            conversion_factor = self.prices.get_home_quote(self.prices.symbols_obj[signal_event.instrument].conversion_rate)
+            if self.prices.symbols_obj[signal_event.instrument].use_inverse_rate == True:
+                conversion_rate = self.prices.symbols_obj[signal_event.instrument].inverse_rate
+                conversion_factor = 1 / self.prices.get_home_quote(conversion_rate)
+            else:
+                conversion_rate = self.prices.symbols_obj[signal_event.instrument].conversion_rate
+                conversion_factor = self.prices.get_home_quote(conversion_rate)
             units = self._calculate_position_size(open_price,signal_event.stop_loss,conversion_factor)
             units = int(units * self.weigths[signal_event.strategy])
 

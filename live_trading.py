@@ -1,8 +1,9 @@
 import queue
 import time
 import threading
+from datetime import datetime
 
-#impots for debugging
+#imports for debugging
 from broker.execution_handler import OandaExecution
 from strategies.donchian_breakout import DonchianBreakout
 from broker.oanda_data_handler import OandaDataHandler
@@ -10,10 +11,11 @@ from portfolio import Portfolio
 from settings import DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID
 from broker.account import OandaAccount
 from server.server import Server
+from storage import MongoTradeStore
 
 
 class TradingEngine(object):
-    def __init__(self,heartbeat,events_queue,account,data_handler,execution_handler,portfolio,strategies,server):
+    def __init__(self,heartbeat,events_queue,account,data_handler,execution_handler,portfolio,strategies,server=None):
         """
 
         :param heartbeat:
@@ -39,7 +41,7 @@ class TradingEngine(object):
         self.engine_thread=threading.Thread(target=self.start_engine,args=[])
         self.price_thread = threading.Thread(target=self.prices.stream.stream_prices,args=[])
         self.event_thread = threading.Thread(target=self.prices.stream.stream_events,args=[])
-        self.server_thread = threading.Thread(target=self.server._start_server,args=[])
+        #self.server_thread = threading.Thread(target=self.server._start_server,args=[])
 
     def _setup_strategies(self,strategies):
         dict = {}
@@ -55,6 +57,7 @@ class TradingEngine(object):
                 pass
             else:
                 # Handle the event
+                print(event)
                 if event.type =='MARKET':
                     for strat in self.strategies:
                         self.strategies[strat].calculate_signals(event)
@@ -65,7 +68,7 @@ class TradingEngine(object):
                     self.execution.execute_order(event)
                 elif event.type == 'FILL':
                     self.portfolio.add_new_trade(event)
-                elif event.type == 'TRADE_CLOSE':
+                elif event.type == 'TRADE_CLOSED':
                     self.portfolio.remove_trade(event)
 
             time.sleep(self.heartbeat)
@@ -75,7 +78,7 @@ class TradingEngine(object):
         self.engine_thread.start()
         self.price_thread.start()
         self.event_thread.start()
-        self.server_thread.start()
+        #self.server_thread.start()
 
 
 
@@ -87,7 +90,7 @@ if __name__ == "__main__":
 
     account = OandaAccount(DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID)
 
-    prices = OandaDataHandler(account,events,["EUR_USD"],'M1')
+    prices = OandaDataHandler(account,events,["EUR_USD"],'S30')
     execution = OandaExecution(events_queue=events,account=account)
 
     strategy_1 = DonchianBreakout(prices,events, entry_lookback=20, exit_lookback=20, atr_stop=3.,TP_atr=5.,name='DC_20x20')
@@ -96,7 +99,10 @@ if __name__ == "__main__":
     strategy_4 = DonchianBreakout(prices,events, entry_lookback=200, exit_lookback=100, atr_stop=3.,TP_atr=5.,name='DC_200x100')
     strategies = [strategy_1,strategy_2,strategy_3,strategy_4]
 
-    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strategies=strategies,open_trades=[])
-    server = Server(account,portfolio)
+    data_store= MongoTradeStore(db_adress='localhost',db_name='test')
+    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strategies=strategies,data_store=data_store)
+    #server = Server(account,portfolio)
 
-    engine = TradingEngine(heartbeat,events,account,prices,execution,portfolio,strategies,server)
+    engine = TradingEngine(heartbeat,events,account,prices,execution,portfolio,strategies)
+    engine.start_live_trading()
+    print('Engine started, time: %s' %datetime.utcnow())
