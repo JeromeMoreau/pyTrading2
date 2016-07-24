@@ -19,7 +19,7 @@ class DonchianBreakout(object):
         self.invested, self.stop_loss = self._calculate_invested()
         self.min_bars = max(entry_lookback, exit_lookback,self.ma_trend_filter)+1
 
-        print('Strategy %s, lookback: %sx%s, atr_stop %s' %(self.identifier, self.entry_lookback,self.exit_lookback, self.trailing_atr))
+        #print('Strategy %s, lookback: %sx%s, atr_stop %s' %(self.identifier, self.entry_lookback,self.exit_lookback, self.trailing_atr))
 
         
     def _calculate_invested(self):

@@ -13,5 +13,4 @@ class Symbol(object):
         self.conversion_rate = conversion_rate
         self.use_inverse_rate=False
         self.inverse_rate = inverse_rate
-        print(self.conversion_rate,self.inverse_rate)
 
