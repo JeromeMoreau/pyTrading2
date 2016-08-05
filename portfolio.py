@@ -3,7 +3,7 @@ from trade import Trade
 import numpy as np
 
 class Portfolio(object):
-    def __init__(self,events_queue,prices,account,strategies,risk_per_trade,data_store=None):
+    def __init__(self,events_queue,prices,account,strat_manager,risk_per_trade,data_store=None):
         """
         Portfolio object to execute signals and create orders, responsible for position sizing.
 
@@ -18,7 +18,7 @@ class Portfolio(object):
         self.events = events_queue
         self.prices = prices
         self.account =account
-        self.strategies,self.weigths = self._setup_strategies(strategies)
+        self.manager = strat_manager
         self.equity = account.equity
         self.starting_equity = account.equity
         self.risk = risk_per_trade
@@ -51,8 +51,9 @@ class Portfolio(object):
                 if trade.strategy == 'unknown':
                     strategy = self.data_store.find_trade(trade.ticket)['strategy']
                     trade.strategy=strategy
-                    self.strategies[trade.strategy].invested[trade.instrument]='LONG' if trade.side=='buy' else 'SHORT'
-                    self.strategies[trade.strategy].stop_loss[trade.instrument]=trade.stop_loss
+                    #TODO: The manager must handle the initial trade conditions
+                    #self.strategies[trade.strategy].invested[trade.instrument]='LONG' if trade.side=='buy' else 'SHORT'
+                    #self.strategies[trade.strategy].stop_loss[trade.instrument]=trade.stop_loss
                 self.open_trades.append(trade)
         if self.account.open_orders == True:
             # Create an Order object for each opened object
@@ -69,7 +70,11 @@ class Portfolio(object):
         self.open_trades.append(trade)
 
         #Notify the strategy
-        self.strategies[event.strategy].invested[event.instrument]='LONG' if event.side=='buy' else 'SHORT'
+        if event.side =='buy':
+            self.manager.set_invested(event.strategy,event.instrument,'LONG')
+        else:
+            self.manager.set_invested(event.strategy,event.instrument,'SHORT')
+        #self.strategies[event.strategy].invested[event.instrument]='LONG' if event.side=='buy' else 'SHORT'
 
         #Record to trade_store
         if self.data_store:
@@ -94,9 +99,10 @@ class Portfolio(object):
                 self.open_trades.remove(trade)
 
                 # Notify the strategy
-                self.strategies[trade.strategy].invested[close_event.instrument]='OUT'
+                #self.strategies[trade.strategy].invested[close_event.instrument]='OUT'
+                self.manager.set_invested(trade.strategy,close_event.instrument,'OUT')
 
-                        #Record to trade_store
+                #Record to trade_store
                 if self.data_store:
                     self.data_store.add_close_trade(trade)
 
@@ -131,7 +137,7 @@ class Portfolio(object):
                 conversion_rate = self.prices.symbols_obj[signal_event.instrument].conversion_rate
                 conversion_factor = self.prices.get_home_quote(conversion_rate)
             units = self._calculate_position_size(open_price,signal_event.stop_loss,conversion_factor)
-            units = int(units * self.weigths[signal_event.strategy])
+            units = int(units)
 
             order = OrderEvent(signal_event.instrument,units=units, order_type=signal_event.order_type,side = signal_event.side,
                                strategy=signal_event.strategy, stop_loss=signal_event.stop_loss)
@@ -149,6 +155,7 @@ class Portfolio(object):
     def _calculate_position_size(self,open_price,stop_loss,conversion_factor):
         if self.compound == True:
             position_size = (self.equity * self.risk) / (abs(stop_loss-open_price)*conversion_factor)
+            #print(position_size)
             return position_size if position_size > 0 else 0
         else:
             position_size = (self.starting_equity * self.risk) / (abs(stop_loss-open_price)*conversion_factor)

@@ -131,6 +131,7 @@ class DatabaseDataHandler(object):
                 print('Pairs %s and %s not available in DB' % (conversion_symbol, inverse_symbol))
 
         # Creates the generator
+        #print('Data fetched from db',flush=True)
         self.create_generator()
 
     def create_generator(self):
@@ -143,6 +144,7 @@ class DatabaseDataHandler(object):
     def reset_generator(self):
         self.create_generator()
         self.continue_backtest=True
+        #print('Generator reseted',flush=True)
 
 
 
@@ -258,7 +260,8 @@ class CSVDataHandler(object):
             inverse_rate = conversion_rate[-3:]+conversion_rate[:3]
             symbol = Symbol(instrument,self.timeframe,conversion_rate,inverse_rate,0)
             if conversion_rate not in self.pairs_available and inverse_rate in self.pairs_available:
-                symbol.use_inverse_rate == True
+                print('Using inverse rate')
+                symbol.use_inverse_rate = True
             elif inverse_rate not in self.pairs_available:
                 print('Neither conversion rate %s or inverse rate %s is available in csv_dir' %(conversion_rate,inverse_rate))
 
@@ -280,18 +283,18 @@ class CSVDataHandler(object):
             self.data_length=len(self.comb_index)
 
             #Load conversion data
-            if symbol.conversion_rate == 'USDUSD':
-                self.data[symbol.conversion_rate]=pd.DataFrame(np.ones(len(self.comb_index)),index=self.comb_index,columns=['close'])
-                self.latest_data[symbol.conversion_rate]=[]
+            self.latest_data[symbol.conversion_rate]=[]
+            if  symbol.conversion_rate in self.pairs_available:
+                conversion_data = self._load_csv(symbol.conversion_rate,self.timeframe)
+                self.data[symbol.conversion_rate] = conversion_data.truncate(before=self.start_date, after=self.end_date)
+            elif symbol.inverse_rate in self.pairs_available:
+                conversion_data=self._load_csv(symbol.inverse_rate,self.timeframe)
+                conversion_data = 1 / conversion_data
+                self.data[symbol.conversion_rate] = conversion_data.truncate(before=self.start_date, after=self.end_date)
             else:
-                if symbol.use_inverse_rate==True:
-                    conversion_data = 1/ self._load_csv(symbol.inverse_rate,self.timeframe)
-                    self.data[symbol.conversion_rate]=conversion_rate.truncate(before=self.start_date, after=self.end_date)
-                    self.latest_data[symbol.conversion_rate]=[]
-                else:
-                    conversion_data = self._load_csv(symbol.conversion_rate,self.timeframe)
-                    self.data[symbol.conversion_rate]=conversion_data.truncate(before=self.start_date, after=self.end_date)
-                    self.latest_data[symbol.conversion_rate]=[]
+                conversion_data = pd.DataFrame(np.ones(len(self.comb_index)),index=self.comb_index,columns=['close'])
+                self.data[symbol.conversion_rate] = conversion_data
+
 
         self.create_generators()
 
@@ -307,10 +310,11 @@ class CSVDataHandler(object):
     def create_generators(self):
         #Reindex the dataframes and create generators
         self.data_generator.clear()
-        for instrument,symbol in self.symbols_obj.items():
-            self.data_generator[instrument]=self.data[instrument].reindex(index=self.comb_index,method='pad').itertuples()
-            self.data_generator[symbol.conversion_rate] = self.data[symbol.conversion_rate].reindex(index=self.comb_index,method='pad').itertuples()
-
+        for key in self.data.keys():
+            self.data_generator[key]=self.data[key].reindex(index=self.comb_index,method='pad').itertuples()
+            self.latest_data[key].clear()
+            #self.data_generator[symbol.conversion_rate] = self.data[symbol.conversion_rate].reindex(index=self.comb_index,method='pad').itertuples()
+        self.continue_backtest = True
 
 
     def _get_new_bar(self,symbol):

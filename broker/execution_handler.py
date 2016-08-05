@@ -61,12 +61,15 @@ class SimulatedExecution(object):
             spread = self.spread if event.trade.side == 'buy' else -self.spread
             close_price = self.prices.get_latest_bar_value(event.trade.instrument) - spread/2
             close_time = self.prices.get_latest_bar_datetime(event.trade.instrument)
-            quote_home_rate = self.prices.get_home_quote(self.prices.symbols_obj[event.trade.instrument].conversion_rate)
+            if self.prices.symbols_obj[event.trade.instrument].use_inverse_rate == True:
+                quote_home_rate = self.prices.get_home_quote(self.prices.symbols_obj[event.trade.instrument].inverse_rate)
+            else:
+                quote_home_rate = self.prices.get_home_quote(self.prices.symbols_obj[event.trade.instrument].conversion_rate)
             if event.trade.side == 'buy':
                 pnl = (close_price - event.trade.open_price) * quote_home_rate * event.trade.units
             elif event.trade.side == 'sell':
                 pnl = (event.trade.open_price - close_price) * quote_home_rate * event.trade.units
-
+            #print('units',event.trade.units)
 
             close_event = CloseEvent(event.trade.side,event.trade.ticket,event.trade.instrument,event.trade.units,close_price,close_time,pnl,interest,strategy=event.strategy,accountBalance=123)
             self.events.put(close_event)
@@ -96,7 +99,7 @@ class OandaExecution(object):
                     'takeProfit':round(order_event.take_profit,4)}
             try:
                 response = self.oanda.create_order(self.account.id, **params)
-                print(response)
+                #print(response)
             except oandapy.OandaError as err:
                 print('Execution: Failed to execute order: %s' %err)
             else:
@@ -104,7 +107,7 @@ class OandaExecution(object):
                 self.events.put(fill_event)
 
         elif order_event.type=='EXIT_ORDER':
-            print('EXECUTION: Received Exit_order')
+            #print('EXECUTION: Received Exit_order')
             try:
                 response = self.oanda.close_trade(self.account.id,order_event.ticket)
             except oandapy.OandaError as err:

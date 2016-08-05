@@ -3,7 +3,7 @@ import metrics
 import queue
 
 class BacktestEngine(object):
-    def __init__(self,events_queue,data_handler,execution_handler,account_handler,portfolio,strategies):
+    def __init__(self,events_queue,data_handler,execution_handler,portfolio,strat_manager):
         """
         Initialises the backtest.
 
@@ -18,9 +18,8 @@ class BacktestEngine(object):
         self.events = events_queue
         self.data_handler = data_handler
         self.execution_handler = execution_handler
-        #self.account_handler = account_handler
         self.portfolio = portfolio
-        self.strategies = strategies
+        self.manager = strat_manager
 
         #Whether or not to show the progress bar and the results
         self.show_progression = True
@@ -52,8 +51,7 @@ class BacktestEngine(object):
                 else:
                     if event.type =='MARKET':
                         #Notify the strategies
-                        for strategy in self.strategies:
-                            strategy.calculate_signals(event)
+                        self.manager.calculate_signals(market_event=event)
                         #Update the portfolio
                         self.portfolio.on_bar()
                     elif event.type == 'SIGNAL':

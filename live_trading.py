@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     account = OandaAccount(DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID)
 
-    prices = OandaDataHandler(account,events,["EUR_USD"],'S30')
+    prices = OandaDataHandler(account,events,["EUR_USD","AUD_USD"],'S30')
     execution = OandaExecution(events_queue=events,account=account)
 
     strategy_1 = DonchianBreakout(prices,events, entry_lookback=20, exit_lookback=20, atr_stop=3.,TP_atr=5.,name='DC_20x20')

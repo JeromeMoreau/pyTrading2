@@ -149,7 +149,7 @@ class OandaDataHandler(object):
     def _get_oanda_history(self,instrument,granularity,count=100):
         oanda = oandapy.API(self.account.environment,self.account.token)
         history = oanda.get_history(instrument=instrument,granularity=self.granularity,candleFormat='midpoint',
-                                    count=100,alignementTimezone="Europe/london")
+                                    count=count,alignementTimezone="Europe/london")
         history = history.get('candles')
         order=['time','openMid','highMid','lowMid','closeMid','volume','complete']
         df = pd.DataFrame(list(history))[order]
@@ -202,8 +202,8 @@ class OandaDataHandler(object):
 
     def get_latest_bars_values(self,symbol,val_type,N=1):
         if N > len(self.data[symbol]):
-            print('DATA HANDLER: Adding data due to insuffisant quantity')
-            self.data[symbol]=self._get_oanda_history(symbol,self.granularity,count=(N+1))
+            print('DATA HANDLER: Adding data due to insuffisant quantity, %i requested, %i available' %(N,len(self.data[symbol])))
+            self.data[symbol]=self._get_oanda_history(symbol,self.granularity,count=(N+10))
         bars_list = self.data[symbol][val_type]
         return np.array(bars_list.values[-N:])
 

@@ -14,7 +14,7 @@ class EventHandler(object):
                                      data['units'],data['price'],datetime.strptime(data['time'], '%Y-%m-%dT%H:%M:%S.%fZ'),
                                      data['pl'],data['interest'],data['accountBalance'],strategy='unknown')
             self.events.put(close_event)
-        elif data['type'] == 'MARKET_ORDER_CREATE':
+        elif data['type'] == 'MARKET_ORDER_CREATE' and 'tradeOpened' in data:
             #Should create an order object
             params={'side':data['side'],
                     'ticket':data['tradeOpened']['id'],
