@@ -1,6 +1,7 @@
 import pymongo
+from server.data_store import DataStore
 
-class MongoTradeStore(object):
+class MongoTradeStore(DataStore):
     def __init__(self,db_adress,db_name):
         self.trade_store = self._connect_to_mongodb(db_adress,db_name)
 

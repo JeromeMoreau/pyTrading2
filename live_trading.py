@@ -1,17 +1,19 @@
 import queue
-import time
 import threading
+import time
 from datetime import datetime
 
 #imports for debugging
 from broker.execution_handler import OandaExecution
 from strategies.donchian_breakout import DonchianBreakout
-from broker.oanda_data_handler import OandaDataHandler
+from broker.data_handlers.oanda_data_handler import OandaDataHandler
 from portfolio import Portfolio
 from settings import DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID
 from broker.account import OandaAccount
-from server.server import Server
-from storage import MongoTradeStore
+from server.storage import MongoTradeStore
+from strategy_manager import StrategyManager
+
+
 
 
 class TradingEngine(object):
@@ -90,19 +92,19 @@ if __name__ == "__main__":
 
     account = OandaAccount(DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID)
 
-    prices = OandaDataHandler(account,events,["EUR_USD","AUD_USD"],'S30')
+    prices = OandaDataHandler(account,events,["EUR_USD","AUD_USD"],'M5')
     execution = OandaExecution(events_queue=events,account=account)
 
     strategy_1 = DonchianBreakout(prices,events, entry_lookback=20, exit_lookback=20, atr_stop=3.,TP_atr=5.,name='DC_20x20')
     strategy_2 = DonchianBreakout(prices,events, entry_lookback=50, exit_lookback=30, atr_stop=3.,TP_atr=5.,name='DC_50x30')
     strategy_3 = DonchianBreakout(prices,events, entry_lookback=100, exit_lookback=50, atr_stop=3.,TP_atr=5.,name='DC_100x50')
     strategy_4 = DonchianBreakout(prices,events, entry_lookback=200, exit_lookback=100, atr_stop=3.,TP_atr=5.,name='DC_200x100')
-    strategies = [strategy_1,strategy_2,strategy_3,strategy_4]
+    manager = StrategyManager([strategy_1,strategy_2,strategy_3,strategy_4])
 
     data_store= MongoTradeStore(db_adress='localhost',db_name='test')
-    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strategies=strategies,data_store=data_store)
+    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strat_manager=manager,data_store=data_store)
     #server = Server(account,portfolio)
 
-    engine = TradingEngine(heartbeat,events,account,prices,execution,portfolio,strategies)
+    engine = TradingEngine(heartbeat,events,account,prices,execution,portfolio,[strategy_1,strategy_2,strategy_3,strategy_4])
     engine.start_live_trading()
     print('Engine started, time: %s' %datetime.utcnow())

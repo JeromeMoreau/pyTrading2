@@ -8,11 +8,12 @@ class Portfolio(object):
         Portfolio object to execute signals and create orders, responsible for position sizing.
 
         :param events_queue:
-        :param account:
-        :param strategies:
-        :param risk_per_trade:
-        :param trades:
-        :return:
+        :param prices: candle feed for symbols
+        :param account: account object
+        :param strat_manager: strategy manager object
+        :param risk_per_trade: risk per trade in percent
+        :param data_store: object responsible for storing the data
+        :return: none
         """
 
         self.events = events_queue
