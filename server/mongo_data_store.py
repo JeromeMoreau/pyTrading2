@@ -1,7 +1,7 @@
 import pymongo
-from server.data_store import DataStore
+from server.base_data_store import AbstractDataStore
 
-class MongoTradeStore(DataStore):
+class MongoTradeStoreAbstract(AbstractDataStore):
     def __init__(self,db_adress,db_name):
         self.trade_store = self._connect_to_mongodb(db_adress,db_name)
 
@@ -53,15 +53,8 @@ class MongoTradeStore(DataStore):
         result = self.trade_store.replace_one({'ticket':trade.ticket},json)
         print('DataStore: close trade added',result)
 
-class CSVTradeStore(object):
-    def __init__(self,path_to_csv):
-        self.path = path_to_csv
-
-    def add_open_trade(self,trade):
-        pass
-
-    def add_close_trade(self,trade):
-        pass
-
-    def find_trade(self,ticket):
-        pass
+    def getAllTrades(self):
+        database = client['TRADES']
+        collection = client['OPENED_TRADES']
+        resultSet = collection.find()
+        return resultSet

@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 from events import MarketEvent
 from broker.symbol import Symbol
-from broker.data_handlers.data_handler import DataHandler
+from broker.data_handlers.data_handler import AbstractDataHandler
 
-class ArcticDatabaseDataHandler(DataHandler):
+class ArcticDatabaseDataHandler(AbstractDataHandler):
 
     def __init__(self,events_queue, symbol_list,account,db_adress='localhost', timeframe='D1',
                  start_date = datetime(2001,1,1), end_date=datetime(2015,1,1),data_vendor='FX'):
@@ -57,6 +57,7 @@ class ArcticDatabaseDataHandler(DataHandler):
 
             db_data = library.read(instrument)
             self.data[instrument]= pd.DataFrame(db_data.data).set_index('datetime')[order]
+            self.data[instrument] = self.data[instrument].truncate(before=self.start_date, after=self.end_date)
             self.symbols_obj[instrument]=symbol
 
             #Create or combine the list of dates

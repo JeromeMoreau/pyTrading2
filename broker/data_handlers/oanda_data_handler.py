@@ -174,7 +174,7 @@ class OandaDataHandler(object):
                                True] #complete
 
                 self.data[candle['instrument']][-1:]=merged_candle
-                print('merged with last candle')
+                print('%s: merged with last candle' %tick.instrument)
 
             else:
                 # Add the candle to the dataframe

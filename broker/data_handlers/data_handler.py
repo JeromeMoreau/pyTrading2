@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class DataHandler(object):
+class AbstractDataHandler(object):
     """
     DataHandler is an abstract base class providing an interface for
     all subsequent (inherited) data handlers (both live and historic).

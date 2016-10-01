@@ -1,6 +1,9 @@
-import pyprind
-import metrics
 import queue
+
+import pyprind
+
+from Statistics.backtest_statistics import Statistics
+
 
 class BacktestEngine(object):
     def __init__(self,events_queue,data_handler,execution_handler,portfolio,strat_manager):
@@ -64,7 +67,7 @@ class BacktestEngine(object):
                         self.portfolio.remove_trade(event)
 
     def _output_performance(self):
-        self.stats = metrics.Statistics(self.portfolio)
+        self.stats = Statistics(self.portfolio)
 
 
 

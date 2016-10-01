@@ -10,7 +10,8 @@ from broker.data_handlers.oanda_data_handler import OandaDataHandler
 from portfolio import Portfolio
 from settings import DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID
 from broker.account import OandaAccount
-from server.storage import MongoTradeStore
+from server.mongo_data_store import MongoTradeStoreAbstract
+from server.influx_data_store import InfluxAbstractDataStore
 from strategy_manager import StrategyManager
 
 
@@ -60,6 +61,7 @@ class TradingEngine(object):
             else:
                 # Handle the event
                 print(event)
+                #TODO: Add the Event logger (DataStore) here
                 if event.type =='MARKET':
                     for strat in self.strategies:
                         self.strategies[strat].calculate_signals(event)
@@ -101,7 +103,8 @@ if __name__ == "__main__":
     strategy_4 = DonchianBreakout(prices,events, entry_lookback=200, exit_lookback=100, atr_stop=3.,TP_atr=5.,name='DC_200x100')
     manager = StrategyManager([strategy_1,strategy_2,strategy_3,strategy_4])
 
-    data_store= MongoTradeStore(db_adress='localhost',db_name='test')
+    #data_store= MongoTradeStore(db_adress='localhost',db_name='test')
+    data_store = InfluxAbstractDataStore()
     portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strat_manager=manager,data_store=data_store)
     #server = Server(account,portfolio)
 
