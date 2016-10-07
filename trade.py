@@ -55,6 +55,23 @@ class Trade(object):
             elif cur_price < self.MFE:
                 self.MFE = cur_price
 
+    def to_JSON(self):
+        json = {'ticket':self.ticket,
+                'side':self.side,
+                'instrument':self.instrument,
+                'units':self.units,
+                'open_price':self.open_price,
+                'open_date':self.open_date,
+                'strategy':self.strategy,
+                'stop_loss':self.stop_loss,
+                'take_profit':self.take_profit,
+                'trailing_stop':self.trailing_stop,
+                'close_date':self.close_date,
+                'close_price':self.close_price,
+                'pnl':self.pnl}
+        return json
+
+
 
 
 

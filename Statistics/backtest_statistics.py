@@ -3,6 +3,8 @@ from Statistics.abstract_statistics import AbstractStatistics
 import seaborn as sns
 from matplotlib import cm
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import FuncFormatter
+import matplotlib.dates as mdates
 
 
 class Statistics(AbstractStatistics):
@@ -128,7 +130,7 @@ class Statistics(AbstractStatistics):
 
         vertival_sections = 5
         fig = plt.figure(figsize=(10, vertival_sections*3))
-        gs = GridSpec(vertival_sections,3,wspace=0.25,hspace=0.5)
+        gs = GridSpec(vertival_sections,3,wspace=0.1,hspace=0.05)
 
         ax_equity = plt.subplot(gs[:2, :])
         ax_drawdown = plt.subplot(gs[2, :], sharex=ax_equity)
@@ -177,6 +179,12 @@ class Statistics(AbstractStatistics):
     def _plot_yearly_returns(self,ax=None):
         if ax is None: ax = plt.gca()
 
+        def format_perc(x, pos):
+            return '%.0f%%' % x
+
+        y_axis_formatter = FuncFormatter(format_perc)
+        ax.yaxis.set_major_formatter(FuncFormatter(y_axis_formatter))
+
         yearly_ret = aggregate_returns(self.history['returns'],'yearly')*100.
         yearly_ret.plot(kind="bar",ax=ax)
         ax.set_title('Yearly Returns (%)', fontweight='bold')
@@ -192,6 +200,15 @@ class Statistics(AbstractStatistics):
         # Plots the equity curve
         if ax is None: ax = plt.gca()
 
+        def format_two_dec(x, pos):
+            return '%.2f' % x
+
+        y_axis_formatter = FuncFormatter(format_two_dec)
+        ax.yaxis.set_major_formatter(FuncFormatter(y_axis_formatter))
+        ax.xaxis.set_tick_params(reset=True)
+        ax.xaxis.set_major_locator(mdates.YearLocator(1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+
         self.history['equity_curve'].plot(ax=ax, color="blue", lw=2.,label="Backtest")
         ax.set_ylabel('Cumulative returns')
         ax.axhline(1.0, linestyle='--', color='black', lw=1)
@@ -202,7 +219,14 @@ class Statistics(AbstractStatistics):
         # Plot the drawdowns (underwater equity)
         if ax is None: ax = plt.gca()
 
-        (self.history['drawdown']*-100).plot(ax=ax,kind="area",alpha=0.3, color="red", lw=2.)
+        def format_perc(x, pos):
+            return '%.0f%%' % x
+
+        y_axis_formatter = FuncFormatter(format_perc)
+        ax.yaxis.set_major_formatter(FuncFormatter(y_axis_formatter))
+
+
+        (self.history['drawdown'] * -100).plot(ax=ax,kind="area",alpha=0.3, color="red", lw=2.)
 
         ax.set_title('Drawdown (%)', fontweight='bold')
         return ax

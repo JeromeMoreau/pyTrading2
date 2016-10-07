@@ -1,7 +1,4 @@
 import queue
-import threading
-import time
-from datetime import datetime
 
 #imports for debugging
 from broker.execution_handler import OandaExecution
@@ -10,79 +7,10 @@ from broker.data_handlers.oanda_data_handler import OandaDataHandler
 from portfolio import Portfolio
 from settings import DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID
 from broker.account import OandaAccount
-from server.mongo_data_store import MongoTradeStoreAbstract
-from server.influx_data_store import InfluxAbstractDataStore
 from strategy_manager import StrategyManager
+from Engine.live_engine import LiveEngine
+from trade_store.mongo_data_store import MongoTradeStore
 
-
-
-
-class TradingEngine(object):
-    def __init__(self,heartbeat,events_queue,account,data_handler,execution_handler,portfolio,strategies,server=None):
-        """
-
-        :param heartbeat:
-        :param events_queue:
-        :param account:
-        :param data_handler:
-        :param execution_handler:
-        :param portfolio:
-        :param strategies:
-        :return:
-        """
-
-        self.heartbeat =heartbeat
-        self.events = events_queue
-        self.account = account
-        self.prices = data_handler
-        self.execution = execution_handler
-        self.portfolio = portfolio
-        self.strategies = self._setup_strategies(strategies)
-        self.server = server
-
-        #Create Threads
-        self.engine_thread=threading.Thread(target=self.start_engine,args=[])
-        self.price_thread = threading.Thread(target=self.prices.stream.stream_prices,args=[])
-        self.event_thread = threading.Thread(target=self.prices.stream.stream_events,args=[])
-        #self.server_thread = threading.Thread(target=self.server._start_server,args=[])
-
-    def _setup_strategies(self,strategies):
-        dict = {}
-        for strat in strategies:
-            dict[strat.identifier] = strat
-        return dict
-
-    def start_engine(self):
-        while True:
-            try:
-                event = self.events.get(False)
-            except queue.Empty:
-                pass
-            else:
-                # Handle the event
-                print(event)
-                #TODO: Add the Event logger (DataStore) here
-                if event.type =='MARKET':
-                    for strat in self.strategies:
-                        self.strategies[strat].calculate_signals(event)
-                    self.portfolio.on_bar()
-                elif event.type =='SIGNAL':
-                    self.portfolio.execute_signal(event)
-                elif event.type =='ORDER' or event.type=='EXIT_ORDER':
-                    self.execution.execute_order(event)
-                elif event.type == 'FILL':
-                    self.portfolio.add_new_trade(event)
-                elif event.type == 'TRADE_CLOSED':
-                    self.portfolio.remove_trade(event)
-
-            time.sleep(self.heartbeat)
-        print('WARNING: Exiting Trading Engine loop')
-
-    def start_live_trading(self):
-        self.engine_thread.start()
-        self.price_thread.start()
-        self.event_thread.start()
-        #self.server_thread.start()
 
 
 
@@ -103,11 +31,8 @@ if __name__ == "__main__":
     strategy_4 = DonchianBreakout(prices,events, entry_lookback=200, exit_lookback=100, atr_stop=3.,TP_atr=5.,name='DC_200x100')
     manager = StrategyManager([strategy_1,strategy_2,strategy_3,strategy_4])
 
-    #data_store= MongoTradeStore(db_adress='localhost',db_name='test')
-    data_store = InfluxAbstractDataStore()
-    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strat_manager=manager,data_store=data_store)
-    #server = Server(account,portfolio)
+    store = MongoTradeStore('TRADES')
+    portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strat_manager=manager,data_store=store)
 
-    engine = TradingEngine(heartbeat,events,account,prices,execution,portfolio,[strategy_1,strategy_2,strategy_3,strategy_4])
-    engine.start_live_trading()
-    print('Engine started, time: %s' %datetime.utcnow())
+    engine = LiveEngine(heartbeat,events,prices,execution,portfolio,manager)
+    engine.run()

@@ -37,22 +37,16 @@ class AbstractDataStore(object):
         """
         raise NotImplementedError("Should implement add_close_trade()")
 
-    @abstractmethod
-    def find_trade(self, trade):
-        """
 
-        :param trade: Trade Object
-        :return:
-        """
-        raise NotImplementedError("Should implement find_trade()")
 
     @abstractmethod
-    def getAllTrades(self):
+    def getTradeById(self,id):
         """
 
-        :return: None
+        :param id: OrderId in the database
+        :return: trade object
         """
-        raise NotImplementedError("Should implement find")
+        raise NotImplementedError("Should implement getTradeById()")
 
 
     def recordTick(self, instrument,bid,ask):

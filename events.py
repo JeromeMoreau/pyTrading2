@@ -39,7 +39,7 @@ class SignalEvent(Event):
     def __init__(self,instrument,order_type,side,strategy,stop_loss=0.,take_profit=0.,price=0.,expiry=None):
         self.type = 'SIGNAL'
         self.instrument = instrument
-        self.order_type = order_type
+        self.order_type = order_ty
         self.side = side
         self.strategy = strategy
         self.stop_loss = stop_loss
