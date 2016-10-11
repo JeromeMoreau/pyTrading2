@@ -1,5 +1,6 @@
 from broker.streamer import Streaming
 from broker.symbol import Symbol
+from broker.data_handlers.data_handler import AbstractDataHandler
 from events import MarketEvent
 from datetime import datetime
 import re
@@ -82,15 +83,13 @@ class CandleGenerator(object):
             return candle
 
 
-class OandaDataHandler(object):
-    def __init__(self,account,events_queue,instruments_list,granularity):
-        self.account = account
-        self.events = events_queue
-        self.instruments_list = instruments_list
-        self.granularity = granularity
-        self.event_handler = EventHandler(events_queue)
+class OandaDataHandler(AbstractDataHandler):
+    def __init__(self,account,events_queue,instruments_list,granularity,data_store=None):
+        super().__init__(account,events_queue,instruments_list,granularity,data_store)
 
-        self.stream = Streaming(instruments_list=instruments_list, account=account,data_handler=self,event_handler=self.event_handler)
+        # Objects for handling ticks and events
+        self.event_handler = EventHandler(events_queue)
+        self.stream = Streaming(instruments_list=instruments_list, account=account,data_handler=self,event_handler=self.event_handler,data_store=self.data_store)
 
         # Containers for price data
         self.data = {}
@@ -200,7 +199,7 @@ class OandaDataHandler(object):
     def get_latest_bar_datetime(self,symbol):
         return self.get_latest_bar_value(symbol,'datetime')
 
-    def get_latest_bars_values(self,symbol,val_type,N=1):
+    def get_latest_bars_values(self,symbol,val_type='close',N=1):
         if N > len(self.data[symbol]):
             print('DATA HANDLER: Adding data due to insuffisant quantity, %i requested, %i available' %(N,len(self.data[symbol])))
             self.data[symbol]=self._get_oanda_history(symbol,self.granularity,count=(N+10))

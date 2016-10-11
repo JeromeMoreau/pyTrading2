@@ -21,8 +21,9 @@ if __name__ == "__main__":
     risk = 0.02
 
     account = OandaAccount(DOMAIN, ACCESS_TOKEN, OANDA_ACCOUNT_ID)
+    store = MongoTradeStore('TRADES',record_tick=False)
 
-    prices = OandaDataHandler(account,events,["EUR_USD","AUD_USD"],'M5')
+    prices = OandaDataHandler(account,events,["EUR_USD","AUD_USD"],'M5',data_store=store)
     execution = OandaExecution(events_queue=events,account=account)
 
     strategy_1 = DonchianBreakout(prices,events, entry_lookback=20, exit_lookback=20, atr_stop=3.,TP_atr=5.,name='DC_20x20')
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     strategy_4 = DonchianBreakout(prices,events, entry_lookback=200, exit_lookback=100, atr_stop=3.,TP_atr=5.,name='DC_200x100')
     manager = StrategyManager([strategy_1,strategy_2,strategy_3,strategy_4])
 
-    store = MongoTradeStore('TRADES')
+
     portfolio = Portfolio(events_queue=events, prices=prices,account=account, risk_per_trade = risk,strat_manager=manager,data_store=store)
 
     engine = LiveEngine(heartbeat,events,prices,execution,portfolio,manager)

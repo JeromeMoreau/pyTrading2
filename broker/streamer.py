@@ -4,7 +4,7 @@ import calendar
 from datetime import datetime
 
 class Streaming(oandapy.Streamer):
-    def __init__(self,instruments_list,account,data_handler,event_handler):
+    def __init__(self,instruments_list,account,data_handler,event_handler,data_store=None):
         """
 
         :param instruments_list:
@@ -18,6 +18,7 @@ class Streaming(oandapy.Streamer):
         self.account=account
         self.data_handler = data_handler
         self.event_handler = event_handler
+        self.data_store = data_store
 
     def add_instrument(self,instrument):
         # Used by data_handler to add an instrument to instrument_list
@@ -41,9 +42,14 @@ class Streaming(oandapy.Streamer):
             tick_event=TickEvent(**params)
             self.data_handler.process_tick(tick_event)
 
+            #Store the tick if data_store attached
+            if self.data_store is not None: self.data_store.addTickToDB(params)
+
         elif 'transaction' in data:
             print('STREAMER: Event:',data)
+            if self.data_store is not None: self.data_store.addEventToDB(data, 'oanda')
             self.event_handler.process_event(data.get('transaction'))
+
 
     def on_error(self, data):
         print('Streaming: Error with the feed: %s' %data)

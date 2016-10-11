@@ -16,6 +16,16 @@ class AbstractDataHandler(object):
 
     __metaclass__ = ABCMeta
 
+    def __init__(self,account,events_queue,instruments_list,granularity,data_store=None):
+        self.account = account
+        self.events = events_queue
+        self.instruments_list = instruments_list
+        self.granularity = granularity
+
+        self.data_store = data_store
+        self.has_data_store = True if data_store is not None else False
+
+
     @abstractmethod
     def get_latest_bars(self, symbol, N=1):
         """
@@ -36,7 +46,7 @@ class AbstractDataHandler(object):
         raise NotImplementedError("Should implement get_latest_bar_value()")
 
     @abstractmethod
-    def get_latest_bars_values(self,symbol,val_type='close'):
+    def get_latest_bars_values(self,symbol,val_type='close',N=1):
         """
 
         :param symbol:
