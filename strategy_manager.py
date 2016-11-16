@@ -17,8 +17,17 @@ class StrategyManager(object):
 
     def calculate_signals(self,market_event):
         # Notify every strategies with a market_event, aggregate their signals and put them in the main queue.
-        for key,strat in self.strategies.items():
-            strat.calculate_signals(market_event)
+
+        for strategy in self.strategies.values():
+            strategy.calculate_signals(market_event)
+
 
     def set_invested(self,strategy_name,symbol,status):
+        """
+
+        :param strategy_name:
+        :param symbol:
+        :param status:
+        :return:
+        """
         self.strategies[strategy_name].invested[symbol]=status

@@ -4,9 +4,8 @@ import pandas as pd
 import threading
 
 class ZMQServer(object):
-    def __init__(self,account,portfolio,port='5555'):
+    def __init__(self,portfolio,port='5555'):
 
-        self.account = account
         self.portfolio = portfolio
         self.alive = False
 
@@ -16,11 +15,11 @@ class ZMQServer(object):
         context = zmq.Context.instance()
         socket = context.socket(zmq.REP)
         socket.bind('tcp://*:'+port)
-        print('Socket created on port %i' %port)
+        print('Socket created on port %s' %port)
 
         return socket,context
 
-    def StartAsync(self):
+    def startAsync(self):
         self.alive = True
         zmq_thread = threading.Thread(target=self._start_server)
         zmq_thread.start()
@@ -28,11 +27,10 @@ class ZMQServer(object):
     def _start_server(self):
 
         while self.alive==True:
-            print("Wait for next request from client")
 
             try:
                 message = self.socket.recv(zmq.NOBLOCK)
-                time.sleep(1)
+                time.sleep(5)
                 print("Received request: %s" % message)
                 #Send reply to the client
                 if message == b'test_connection':
@@ -42,7 +40,7 @@ class ZMQServer(object):
 
 
             except:
-                print("No messaged received in time")
+                pass
 
         print('Server closing socket')
         self.socket.close()

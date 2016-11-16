@@ -87,3 +87,24 @@ def aggregate_returns(returns,convert_to):
             [lambda x: x.year]).apply(cumulate_returns)
     else:
         ValueError('convert_to must be weekly, monthly or yearly')
+
+
+def bootstraping(daily_ret,runs=5000):
+
+    #mean daily return
+    mean_return = np.mean(daily_ret)
+
+    #zero-centered daily returns (list)
+    daily_ret_centered = daily_ret - mean_return
+
+    means=[]
+    for run in range(runs):
+        gains = np.random.choice(daily_ret_centered,size=len(daily_ret_centered),replace=True)
+        means.append(gains.mean())
+
+    plt.hist(means,bins=50)
+    p_value = (100-stats.percentileofscore(means,mean_return))/100
+    plt.axvline(x=mean_return,linewidth=4,color='r')
+    plt.show()
+
+    print("Bootstraping Type 1 error: %0.4f" %p_value)

@@ -3,12 +3,13 @@ import queue
 import threading
 import time
 from datetime import datetime
+from server.zeroMQ_server import ZMQServer
 
 class LiveEngine(TradingEngine):
     """
     Trading Engine implementation for live trading. Runs on 3 threads:
     """
-    def __init__(self,heartbeat,events,data_handler,execution_handler,portfolio,strategy_manager,data_store=None):
+    def __init__(self,heartbeat,events,data_handler,execution_handler,portfolio,strategy_manager,data_store=None,server=None):
 
         super().__init__(events,data_handler,execution_handler,portfolio,strategy_manager,data_store)
 
@@ -18,6 +19,11 @@ class LiveEngine(TradingEngine):
         self.engine_thread=threading.Thread(target=self._start_engine, args=[])
         self.price_thread = threading.Thread(target=self.data.stream.stream_prices, args=[])
         self.event_thread = threading.Thread(target=self.data.stream.stream_events, args=[])
+
+        #Server
+        server = ZMQServer(self.portfolio)
+        #self.server_thread = server.startAsync()
+
 
     def _start_engine(self):
         while True:

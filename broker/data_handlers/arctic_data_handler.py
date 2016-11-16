@@ -134,7 +134,7 @@ class ArcticDatabaseDataHandler(AbstractDataHandler):
             return getattr(bars_list[-1], val_type)
 
 
-    def get_latest_bars_values(self, symbol, val_type, N=1):
+    def get_latest_bars_values(self, symbol, val_type='close',N=1):
         # Returns the last N bar values from the latest_symbol list, or N-k if less available.
         bars_list = self.get_latest_bars(symbol, N)
 

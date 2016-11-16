@@ -14,6 +14,7 @@ class EventHandler(object):
                                      data['units'],data['price'],datetime.strptime(data['time'], '%Y-%m-%dT%H:%M:%S.%fZ'),
                                      data['pl'],data['interest'],data['accountBalance'],strategy='unknown')
             self.events.put(close_event)
+            print('EVENT HANDLER -> Generatded close_event')
         elif data['type'] == 'MARKET_ORDER_CREATE' and 'tradeOpened' in data:
             #Should create an order object
             params={'side':data['side'],
@@ -23,6 +24,11 @@ class EventHandler(object):
                     'price':data['price'],
                     'open_date':datetime.strptime(data['time'],'%Y-%m-%dT%H:%M:%S.%fz'),
                     }
+
+            if 'tradeReduced' in data and not data['tradeReduced']:
+                print('EVENT HANDLER: Trying to reduce Trade')
+
+
 
 
         elif data['type'] == 'MARKET_IF_TOUCHED_ORDER_CREATE':

@@ -50,8 +50,9 @@ class Portfolio(object):
             trade_list = self.account.trades_info()
             for trade in trade_list:
                 if trade.strategy == 'unknown':
-                    strategy = self.data_store.find_trade(trade.ticket)['strategy']
-                    trade.strategy=strategy
+                    pass
+                    #strategy = self.data_store.find_trade(trade.ticket)['strategy']
+                    #trade.strategy=strategy
                     #TODO: The manager must handle the initial trade conditions
                     #self.strategies[trade.strategy].invested[trade.instrument]='LONG' if trade.side=='buy' else 'SHORT'
                     #self.strategies[trade.strategy].stop_loss[trade.instrument]=trade.stop_loss

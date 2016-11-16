@@ -104,7 +104,8 @@ class OandaExecution(object):
                 print('Execution: Failed to execute order: %s' %err)
             else:
                 fill_event = self._create_fill(response,order_event)
-                self.events.put(fill_event)
+                if fill_event is not None: self.events.put(fill_event)
+
 
         elif order_event.type=='EXIT_ORDER':
             #print('EXECUTION: Received Exit_order')

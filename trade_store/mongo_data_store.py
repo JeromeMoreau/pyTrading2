@@ -60,3 +60,14 @@ class MongoTradeStore(AbstractDataStore):
         data = data['transaction']
         data['broker']=broker
         self.database['EVENTS'].insert_one(data)
+
+    def clear_tables(self):
+        """
+        Empty every documents in the following tables: OPENED_TRADES, CLOSED_TRADES
+        Be careful with this function.
+        """
+        self.database['CLOSED_TRADES'].remove({"open_date": {"$gt": "1990-12-15"}})
+        self.database['OPENED_TRADES'].remove({"open_date": {"$gt": "1990-12-15"}})
+
+    def find_trade(self,ticket):
+        pass

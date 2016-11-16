@@ -129,11 +129,12 @@ class Statistics(AbstractStatistics):
         sns.set_palette("deep",desat=.6)
 
         vertival_sections = 5
-        fig = plt.figure(figsize=(10, vertival_sections*3))
-        gs = GridSpec(vertival_sections,3,wspace=0.1,hspace=0.05)
+        fig = plt.figure(figsize=(10, vertival_sections * 3.8))
+        fig.suptitle("Stats", y=0.98, weight='bold')
+        gs = GridSpec(vertival_sections,3,wspace=0.15,hspace=0.3)
 
         ax_equity = plt.subplot(gs[:2, :])
-        ax_drawdown = plt.subplot(gs[2, :], sharex=ax_equity)
+        ax_drawdown = plt.subplot(gs[2, :])
         ax_monthly_returns = plt.subplot(gs[3, :2])
         ax_yearly_returns = plt.subplot(gs[3, 2])
 
@@ -148,7 +149,7 @@ class Statistics(AbstractStatistics):
 
     """------------------------------------------
     --------------INDIVIDUAL CHARTS PLOTS--------------
-    """#------------------------------------------
+    ------------------------------------------"""
 
     def _plot_monthly_returns(self,ax=None):
         if ax is None: ax = plt.gca()
@@ -212,6 +213,7 @@ class Statistics(AbstractStatistics):
         self.history['equity_curve'].plot(ax=ax, color="blue", lw=2.,label="Backtest")
         ax.set_ylabel('Cumulative returns')
         ax.axhline(1.0, linestyle='--', color='black', lw=1)
+        plt.setp(ax.get_xticklabels(), visible=True, rotation=0, ha='center')
 
         return ax
 
@@ -228,6 +230,7 @@ class Statistics(AbstractStatistics):
 
         (self.history['drawdown'] * -100).plot(ax=ax,kind="area",alpha=0.3, color="red", lw=2.)
 
+        plt.setp(ax.get_xticklabels(), visible=True, rotation=0, ha='center')
         ax.set_title('Drawdown (%)', fontweight='bold')
         return ax
 
@@ -237,5 +240,6 @@ class Statistics(AbstractStatistics):
         exposure_df = pd.DataFrame.from_dict(data=self.history.exposure.to_dict(),orient='index')
         exposure_df.plot(kind='line',ax=ax)
 
+        plt.setp(ax.get_xticklabels(), visible=True, rotation=0, ha='center')
         ax.set_title('Raw Exposure', fontweight='bold')
         return ax
